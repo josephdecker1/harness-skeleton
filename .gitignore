@@ -1,0 +1,17 @@
+# Secrets — never commit
+.env
+.env.*
+*-service-account.json
+client_secret*.json
+token_*.json
+*.pem
+
+# Agent working state (keep the structure, ignore the churn)
+.claude/logs/*.local.md
+.claude/memory/*.local.md
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

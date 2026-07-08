@@ -1,0 +1,62 @@
+name: harness-gate
+
+# Hold agent-authored changes to the same bar a human merges through. This runs
+# the deterministic parts of the harness in CI so nothing depends on the agent
+# remembering to.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  no-secrets:
+    name: no hard-coded secrets in the diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: scan pushed range for secret shapes
+        run: |
+          set -euo pipefail
+          # Pick the base to diff against: the PR base, the push's before-sha,
+          # or the empty tree for a root/first commit (the exact case where a
+          # naive `HEAD~1` fails and pipefail would mask it into a false "clean").
+          base="${{ github.event.pull_request.base.sha || github.event.before || '' }}"
+          if [ -z "$base" ] || ! git rev-parse --verify -q "${base}^{commit}" >/dev/null 2>&1; then
+            base="$(git hash-object -t tree /dev/null)"   # empty tree -> scan everything
+          fi
+          # Exclude evals/ — those are reviewed static fixtures that intentionally
+          # contain a placeholder key-shaped literal used to test the hook; scanning
+          # them would fail the build on every fresh commit. The local hook still
+          # scans live writes to evals/ by content, so this isn't a coverage hole.
+          # Separate -e patterns so the PEM pattern (starts with '-') isn't parsed
+          # as a grep option. Keep these identical to the local hook's.
+          if git diff "$base" HEAD -- . ':(exclude)evals' | grep -nE \
+               -e 'AKIA[0-9A-Z]{16}' \
+               -e '(^|[^A-Za-z0-9])sk-[A-Za-z0-9-]{20,}' \
+               -e '-----BEGIN [A-Z ]*PRIVATE KEY-----' \
+               -e 'ghp_[A-Za-z0-9]{36}' \
+               -e 'xox[baprs]-[A-Za-z0-9-]{10,}'; then
+            echo "::error::a secret-shaped string appears in the diff"
+            exit 1
+          fi
+          echo "clean"
+
+  eval-gate:
+    name: evals still hold
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run the deterministic evals
+        run: |
+          chmod +x .claude/hooks/check-no-secrets.sh evals/run.sh
+          ./evals/run.sh
+
+  # Wire your real gates here — they mirror the local harness. This skeleton
+  # ships the two above as working references; add your build/test/lint jobs:
+  #
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps: [ checkout, setup, "run the test suite" ]

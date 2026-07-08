@@ -1,0 +1,16 @@
+{
+  "_comment": "Example agent hook wiring. Merge into your agent's settings.json. The PreToolUse hook runs before Write/Edit and can block the call (exit 2). Make the script executable: chmod +x .claude/hooks/check-no-secrets.sh",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-no-secrets.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
