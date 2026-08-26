@@ -54,8 +54,62 @@ jobs:
           chmod +x .claude/hooks/check-no-secrets.sh evals/run.sh
           ./evals/run.sh
 
+  plain-language:
+    name: plain language gates
+    # Pull requests only. Both gates measure a branch against its base, and on a
+    # push to main that range is empty, so the job would pass without checking
+    # anything. A job that always exits 0 is the problem this repo is fixing.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Both gates resolve origin/main. The default depth-1 checkout leaves it
+          # unreachable, which the merge-base probe turns into an exit 2.
+          fetch-depth: 0
+
+      - name: gate scripts still match the rule
+        run: |
+          chmod +x scripts/plain-language-extract.sh \
+                   scripts/plain-language-rhetoric.sh \
+                   scripts/plain-language-comments.sh
+          ./scripts/plain-language-extract.sh \
+            "## Gate 1: five rhetorical devices" > "$RUNNER_TEMP/gate1.sh"
+          ./scripts/plain-language-extract.sh \
+            "## Gate 2: comments longer than the code" > "$RUNNER_TEMP/gate2.sh"
+          diff -u "$RUNNER_TEMP/gate1.sh" scripts/plain-language-rhetoric.sh
+          diff -u "$RUNNER_TEMP/gate2.sh" scripts/plain-language-comments.sh
+          echo "both scripts match their fenced block in the rule"
+
+      # Surface 2 of the rule's Wiring section, copied rather than re-derived.
+      # The loop walks each ordinary commit, then one range pass catches what no
+      # single commit holds. A range dilutes and a split commit hides, so both
+      # passes are needed and neither is enough alone.
+      - name: comments no longer than the code they describe
+        run: |
+          test "$(git rev-parse --is-shallow-repository)" = false || {
+              echo "plain-language: shallow clone. Give CI full history."; exit 2; }
+          BASE=$(git merge-base origin/main HEAD) || {
+              echo "plain-language: cannot resolve origin/main."; exit 2; }
+          rc=0
+          for c in $(git rev-list --no-merges --reverse "$BASE..HEAD"); do
+              scripts/plain-language-comments.sh "$c^!" || rc=1
+          done
+          scripts/plain-language-comments.sh "$BASE...HEAD" || rc=1
+          exit $rc
+
+      # Surface 3, also copied. The three plain-language files are excluded
+      # because all three quote the banned phrases as examples.
+      - name: no rhetorical devices in changed markdown
+        run: |
+          BASE=$(git merge-base origin/main HEAD) || {
+              echo "plain-language: cannot resolve origin/main."; exit 2; }
+          git diff --name-only --diff-filter=d -z "$BASE...HEAD" -- '*.md' \
+            | grep -zv 'plain-language' \
+            | xargs -0 scripts/plain-language-rhetoric.sh
+
   # Wire your real gates here — they mirror the local harness. This skeleton
-  # ships the two above as working references; add your build/test/lint jobs:
+  # ships the three above as working references; add your build/test/lint jobs:
   #
   # test:
   #   runs-on: ubuntu-latest

@@ -6,12 +6,18 @@ the rule. Wire them in when the rule needs to hold after the first week.
 A violation exits 1, which a pre-commit hook and a CI step read as failure. A
 gate that cannot run exits 2 or higher.
 
+Each gate below appears twice in this repo: as the fenced block you can copy, and
+as a file under `scripts/` that CI runs. `scripts/plain-language-extract.sh`
+pulls the block out of this file. The `plain-language` CI job diffs it against
+the committed script, so the two copies cannot drift apart in silence. Save the
+block at the same path when you copy this rule into your own repo.
+
 ---
 
 ## Gate 1: five rhetorical devices
 
 Rule 6 bans twenty-five devices. Five are closed word lists, so a machine can
-catch them. Save as `scripts/plain-language-rhetoric.sh`.
+catch them. This repo runs it from `scripts/plain-language-rhetoric.sh`.
 
 ```bash
 #!/usr/bin/env bash
@@ -66,7 +72,7 @@ Five limits, all measured on fixtures.
 
 ## Gate 2: comments longer than the code
 
-Enforces hard limit 1 of the code-comment section. Save as
+Enforces hard limit 1 of the code-comment section. This repo runs it from
 `scripts/plain-language-comments.sh`. It takes an optional commit range and
 defaults to the staged diff, so one script serves a pre-commit hook and a CI
 per-commit check.
@@ -328,3 +334,8 @@ on the checkout step, because the default checkout fetches depth 1 and leaves
 
 Wire all three. CI is the surface that survives a mis-set `core.hooksPath` and a
 coworker who never installs the hook.
+
+`.github/workflows/harness-gate.yml` runs surfaces 2 and 3 here, as the
+`plain-language` job, on pull requests only. Both surfaces measure a branch
+against its base, and a push to `main` leaves that range empty. Surface 1 stays
+yours to install, because git does not track `.git/hooks`.
