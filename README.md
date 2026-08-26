@@ -92,7 +92,8 @@ is the scaffold to wire the same way.
 harness-skeleton/
 ├── CLAUDE.md                     # the agent's house config (read every session)
 ├── .claude/
-│   ├── rules/                    # constraints: surgical diffs, goal-driven, done, grounded
+│   ├── rules/                    # constraints: surgical diffs, goal-driven, done,
+│   │                             # grounded, plain language
 │   ├── skills/verify/            # a procedure the agent invokes by name
 │   ├── agents/                   # the adversarial reviewer + a routing index
 │   ├── hooks/                    # a PreToolUse secret-scan gate + settings example
