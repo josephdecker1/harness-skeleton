@@ -27,6 +27,7 @@ Each one froze a defect found during review of the gates themselves.
 | eval-003 | a directory that is not a git repository | exit 2 |
 | eval-004 | each fenced block against its committed script | byte-identical |
 | eval-004 | a heading that does not exist | exit 2 |
+| eval-004 | a longer heading sitting above the real one | the real block wins |
 
 ## Why the odd ones matter
 
@@ -60,10 +61,13 @@ that the model complies.
 
 ## A note on this file
 
-The CI step for gate 1 skips any path containing `plain-language`, because the
-rule files quote the banned phrases as examples. This file inherits that skip by
-its name, which is why it can quote a fixture. Rename it and the gate starts
-reading it.
+The CI step for gate 1 skips `.claude/rules/plain-language*`, because those three
+files quote the banned phrases as examples. The skip is anchored to that
+directory, so this file is read like any other. It describes its fixtures rather
+than quoting them, and gate 1 reads it clean.
+
+An earlier draft matched the substring `plain-language` anywhere in the path.
+That let any file opt itself out of gate 1 by choosing its own name.
 
 ## Fail = block
 

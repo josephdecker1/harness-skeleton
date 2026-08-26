@@ -17,7 +17,7 @@ if [ ! -f "$DOC" ]; then
 fi
 
 out=$(awk -v h="$1" '
-  index($0, h) == 1 { seen = 1; next }
+  $0 == h            { seen = 1; next }
   !seen             { next }
   inblk && /^```$/  { exit }
   inblk             { print; next }

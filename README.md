@@ -60,11 +60,11 @@ Being honest about a skeleton matters more than looking finished, so:
   `evals/run.sh` — which the CI gate (`.github/workflows/harness-gate.yml`) runs
   on every push. That much is a working enforcement loop you can watch go
   red-green.
-- **Runnable and tested in CI.** The plain-language gates in `scripts/` fail a
-  pull request two ways. One catches a banned rhetorical device in changed
-  Markdown. The other catches a comment block longer than the code under it.
-  `evals/run.sh` proves both, and the `plain-language` job runs them on every
-  pull request.
+- **Runnable and tested in CI.** The plain-language gates in `scripts/` fail the
+  build two ways. One catches a banned rhetorical device in changed Markdown.
+  The other catches a comment block longer than the code under it. The
+  `plain-language` job runs both against the range this branch adds, and
+  `evals/run.sh` proves the gates themselves still work.
 - **Real reference text you replace.** The rules, the memory/session-log/eval
   examples, and the review-agent playbook are genuine and usable as-is, but they
   are *content*, not enforcement — they work because the agent reads and follows
@@ -105,7 +105,7 @@ harness-skeleton/
 │   ├── memory/                   # durable facts + the index that loads them
 │   └── logs/                     # session-log template
 ├── scripts/                      # the two plain-language gates, plus the drift check
-├── evals/                        # behavioral evals that gate model upgrades
+├── evals/                        # one model-behavior eval + deterministic gate tests
 └── .github/workflows/            # a CI job that runs the same gates a human merges through
 ```
 

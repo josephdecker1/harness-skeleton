@@ -77,7 +77,8 @@ run_comments() {   # $1 = repo, rest = the gate's own arguments
   ( cd "$dir" && "$comments" "$@" )
 }
 diff_block() {     # $1 = heading, $2 = the shipped script
-  "$extract" "$1" | diff -q - "$2"
+  # This is the only drift check, so it prints the difference rather than -q.
+  "$extract" "$1" | diff -u - "$2"
 }
 
 # eval-002: gate 1 reads prose.
@@ -110,5 +111,14 @@ check_status "eval-004 gate 1 matches the rule" 0 \
 check_status "eval-004 gate 2 matches the rule" 0 \
   diff_block "## Gate 2: comments longer than the code" "$comments"
 check_status "eval-004 missing heading fails closed" 2 "$extract" "## Gate 9: absent"
+# A heading that merely starts with the wanted text must not shadow the real one.
+# A prefix match here returns the wrong script and still exits 0.
+{ printf '## Gate 1: five rhetorical devices, second edition\n\n'
+  printf '```bash\necho SHADOW\n```\n\n'
+  printf '## Gate 1: five rhetorical devices\n\n'
+  printf '```bash\necho REAL\n```\n'; } > "$tmp/shadow.md"
+extract_from() { DOC="$1" "$extract" "$2"; }
+check_says "eval-004 exact heading match" "REAL" \
+  extract_from "$tmp/shadow.md" "## Gate 1: five rhetorical devices"
 
 exit "$fail"
