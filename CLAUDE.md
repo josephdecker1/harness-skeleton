@@ -38,6 +38,13 @@ Never state a specific (a path, a number, a behavior) from memory or
 pattern-matching. Run it, read the source, and cite it — or label it explicitly
 as unverified. See `.claude/rules/ground-every-claim.md`.
 
+## Plain language
+
+One idea per sentence, 25 words maximum, active voice. Give the number rather
+than the adjective. The default for a code comment is no comment, and a comment
+block is never longer than the code it describes. See
+`.claude/rules/plain-language.md`.
+
 ## Delegation
 
 When a task fans out, dispatch focused subagents rather than doing everything in
