@@ -1,142 +1,179 @@
 # harness-skeleton
 
-A sanitized, forkable skeleton of the agent **harness** I run every day — the
-configuration that turns an AI coding agent from a fancy autocomplete into an
-engineering system a team can trust.
+A forkable skeleton of the agent **harness** I run every day. A harness is the
+configuration that turns an AI coding agent into an engineering system a team can trust.
 
-This is not a prompt collection. It's the scaffolding: the rules the agent reads
-every session, the skills it invokes instead of improvising, the deterministic
-hooks it can't skip, the memory that survives a context reset, the review agents
-that argue before anything ships, the CI gates that hold agent output to the same
-bar as human output, and the evals that decide whether a model upgrade is safe.
+It holds:
 
-> The example content here is generic on purpose. Swap the placeholder rules,
-> skills, and evals for your team's. The **structure** is the point.
+- the rules the agent reads every session
+- the skills it invokes instead of improvising
+- the hooks it cannot skip
+- the memory that survives a context reset
+- the review agent that argues before anything ships
+- the CI gates that hold agent output to the same bar as human output
+- the evals that decide whether a model upgrade is safe
+
+> The example content is generic on purpose. Swap the placeholder rules, skills and
+> evals for your team's. The **structure** is the point.
+
+## What changed in v2 (October 2026)
+
+- The review agent is a real Claude Code subagent, rewritten around five frames:
+  necessity, complexity, mess, goal achievement and test correctness.
+- A second runnable hook, `review-gate`, blocks a push or a pull request until the
+  review has run. It has 90 test cases and 21 mutation checks.
+- New rules: the review checkpoint, try before you call it impossible, ablate before
+  you theorize, and agents clean up what they plant.
+- New skills: `handoff` and `teach-claude`.
+- An eval ledger, plus the plain-language gates running in CI.
+- The repo installs as a Claude Code plugin.
+
+Full list: [CHANGELOG.md](CHANGELOG.md).
+
+## Install
+
+### As a plugin (two commands)
+
+Inside Claude Code:
+
+```
+/plugin marketplace add josephdecker1/harness-skeleton
+/plugin install harness-skeleton@harness-skeleton
+```
+
+Restart the session. You get:
+
+- `harness-skeleton:adversarial-review-agent`, the critic
+- The `verify`, `handoff` and `teach-claude` skills
+- Two hooks: a secret scan on every file write, and the review gate on `git push`,
+  `gh pr create`, `gh pr ready` and `gh pr merge`
+
+A plugin cannot ship rules or a `CLAUDE.md`. Copy the files you want from
+`.claude/rules/` into your repo's `.claude/rules/`, and merge the parts of
+`CLAUDE.md` that fit.
+
+To offer the plugin to everyone who opens a repo, commit this to that repo's
+`.claude/settings.json`. Each teammate gets it after they trust the folder.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "harness-skeleton": {
+      "source": { "source": "github", "repo": "josephdecker1/harness-skeleton" }
+    }
+  },
+  "enabledPlugins": { "harness-skeleton@harness-skeleton": true }
+}
+```
+
+### As a fork
+
+1. Fork the repo, or copy its `.claude/` folder and `CLAUDE.md` into your repo.
+2. **Replace the rules** in `.claude/rules/` with your team's. Start with three. Add
+   one each time you correct the agent on the same thing twice.
+3. **Wire the hooks.** Merge `.claude/hooks/settings.example.json` into
+   `.claude/settings.json`. Skip this step if you installed the plugin, or the hooks
+   run twice.
+4. **Adopt the review loop.** `.claude/rules/review-checkpoint.md` says when the
+   critic runs and how to close its findings.
+5. **Add one eval** for the behavior you care most about, and run it in CI.
+6. **Keep session logs**, and run `handoff` before a context reset. Memory files are
+   distilled from both.
 
 ## Why a harness
 
-Most teams that adopt an AI coding tool get three failure modes:
+Most teams that adopt an AI coding tool hit three failure modes:
 
-1. **Shallow usage** — the model writes boilerplate while design, review, and
-   debugging stay manual. Autocomplete with better marketing.
-2. **Fifty private playbooks** — every engineer prompts differently. Nothing is
-   shared, versioned, or reviewed; quality depends on who typed.
-3. **The trust gap** — agent output is either rubber-stamped or re-read line by
-   line. Neither scales.
+1. **Shallow use.** The model writes boilerplate, while design, review and
+   debugging stay manual.
+2. **Fifty private playbooks.** Every engineer prompts differently. Nothing is
+   shared, versioned or reviewed, so quality depends on who typed.
+3. **The trust gap.** Agent output is either rubber-stamped or re-read line by line.
+   Neither scales.
 
-None of these are model problems. They're harness problems. A harness is
-infrastructure: you build it, version it in the repo, review changes to it like
-code, and test it.
+These are harness problems. A harness is infrastructure: you build it, version it in
+the repo, review changes to it like code, and test it.
 
 ## The nine surfaces
 
-Each surface decides one thing: what the model **knows**, what it **may do**, or
-what it must **prove**.
+Each surface decides one thing: what the model **knows**, what it **may do**, or what
+it must **prove**.
 
 | Surface | Lives in | Decides |
 |---|---|---|
 | **The agent** | `CLAUDE.md` | How the agent is oriented every session |
 | **Rules** | `.claude/rules/` | House constraints, read every session |
-| **Skills** | `.claude/skills/` | Repeatable procedures, invoked not improvised |
-| **Hooks** | `.claude/hooks/` | Deterministic checks the model can't skip |
+| **Skills** | `.claude/skills/` | Repeatable procedures, invoked by name |
+| **Hooks** | `.claude/hooks/` | Deterministic checks the model cannot skip |
 | **Memory** | `.claude/memory/` | Durable context that survives every session |
 | **Review agents** | `.claude/agents/` | Adversarial second passes before "done" |
-| **CI gates** | `.github/workflows/` | The same bars humans merge through |
+| **CI gates** | `.github/workflows/` | The same bar a human merges through |
 | **Evals** | `evals/` | Behavioral tests that gate model swaps |
-| **Session logs** | `.claude/logs/` | Every decision written down, searchable |
+| **Session logs** | `.claude/logs/` | Every decision written down |
 
-They interlock. A rule is enforced by a hook, checked by a review agent, and
-gated in CI. An eval proves the whole loop still behaves after a model upgrade. A
-session log is what memory is distilled from. Pull one surface out and the others
-get weaker.
+They interlock. A rule is enforced by a hook, checked by a review agent and gated in
+CI. An eval proves the loop still behaves after a model upgrade. A session log is
+what memory is distilled from. Pull one surface out and the rest get weaker.
 
-## What's runnable here (and what's yours to fill in)
+## What runs, and what you fill in
 
-Being honest about a skeleton matters more than looking finished, so:
-
-- **Runnable and tested in CI.** The secret-scan hook
-  (`.claude/hooks/check-no-secrets.sh`) blocks a hard-coded key on both Write and
-  Edit, fails closed if it can't parse the payload, and is proven by
-  `evals/run.sh` — which the CI gate (`.github/workflows/harness-gate.yml`) runs
-  on every pull request and every push to `main`. That much is a working
-  enforcement loop you can watch go red-green.
-- **Runnable and tested in CI.** The plain-language gates in `scripts/` fail the
-  build two ways. One catches a banned rhetorical device in changed Markdown.
-  The other catches a comment block longer than the code under it. The
-  `plain-language` job runs both against the range this branch adds, and
-  `evals/run.sh` proves the gates themselves still work.
-- **Real reference text you replace.** The rules, the memory/session-log/eval
-  examples, and the review-agent playbook are genuine and usable as-is, but they
-  are *content*, not enforcement — they work because the agent reads and follows
-  them. Swap them for your team's.
-
-The leverage is the loop, and the loop is only as strong as the surfaces you
-actually wire. This repo ships two wired end-to-end as worked examples; the rest
-is the scaffold to wire the same way.
-
-```
-                         ┌───────────────┐   CLAUDE.md — read every session
-                         │   THE AGENT   │
-                         └───────┬───────┘
-           ┌─────────────────────┼─────────────────────┐
-           │                     │                     │
-   ┌───────┴───────┐     ┌───────┴───────┐     ┌───────┴───────┐
-   │ what it       │     │ what it       │     │ what it must  │
-   │   KNOWS       │     │   MAY DO      │     │    PROVE      │
-   ├───────────────┤     ├───────────────┤     ├───────────────┤
-   │ Rules         │     │ Skills        │     │ Review agents │
-   │ Memory        │     │ Hooks         │     │ CI gates      │
-   │               │     │               │     │ Evals         │
-   │               │     │               │     │ Session logs  │
-   └───────────────┘     └───────────────┘     └───────────────┘
-```
+- **Runnable, and tested on every pull request:**
+  - `check-no-secrets.sh` blocks a hard-coded key on Write and Edit, and fails
+    closed when it cannot parse the payload.
+  - `review-gate.py` denies a publish command until the session shows a review
+    dispatch. Before it shipped, its classifier ran over 17,348 real commands with no
+    false positive in a hand-checked sample.
+  - The plain-language gates in `scripts/` fail the build on a banned rhetorical
+    device in changed Markdown, and on a comment block longer than its code.
+  - `evals/run.sh` proves all of the above, and `.github/workflows/harness-gate.yml`
+    runs it on every pull request and every push to `main`.
+- **Reference text you replace:** the rules, the review agent's playbook, the skills,
+  and the memory, log and eval examples. They work because the agent reads them.
 
 ## Layout
 
 ```
 harness-skeleton/
-├── CLAUDE.md                     # the agent's house config (read every session)
+├── CLAUDE.md                  # the agent's house config, read every session
+├── .claude-plugin/            # plugin manifest and marketplace file
 ├── .claude/
-│   ├── rules/                    # constraints: surgical diffs, goal-driven, done,
-│   │                             # grounded, plain language
-│   ├── skills/verify/            # a procedure the agent invokes by name
-│   ├── agents/                   # the adversarial reviewer + a routing index
-│   ├── hooks/                    # a PreToolUse secret-scan gate + settings example
-│   ├── memory/                   # durable facts + the index that loads them
-│   └── logs/                     # session-log template
-├── scripts/                      # the two plain-language gates, plus the drift check
-├── evals/                        # one model-behavior eval + deterministic gate tests
-└── .github/workflows/            # a CI job that runs the same gates a human merges through
+│   ├── rules/                 # constraints the agent reads every session
+│   ├── skills/                # verify, handoff, teach-claude
+│   ├── agents/                # the adversarial reviewer and a routing index
+│   ├── hooks/                 # secret scan, review gate, and their wiring
+│   ├── memory/                # durable facts and the index that loads them
+│   └── logs/                  # session-log template
+├── evals/                     # the lesson ledger and its runnable evals
+├── scripts/                   # the plain-language gates
+└── .github/workflows/         # CI that runs the same gates a human merges through
 ```
 
-## How to adopt this
+## Lessons from running it
 
-1. **Fork it.** Drop it into a repo (or your monorepo root).
-2. **Replace the rules** in `.claude/rules/` with your team's real constraints.
-   Start with three. Add one every time the agent does something you had to
-   correct twice.
-3. **Wire the hooks** — copy `.claude/hooks/settings.example.json` into your
-   agent's settings and make the secret-scan hook executable. Hooks are the only
-   surface the model literally cannot talk its way past; use them for the checks
-   that must never be skipped.
-4. **Adopt the review loop** — the adversarial agent in `.claude/agents/` is the
-   critic half of a drafter/critic pair. Run it against a diff before "done."
-5. **Add one eval** for the behavior you care most about, and run it in CI. This
-   is what lets you upgrade models without holding your breath.
-6. **Keep session logs.** They are cheap to write and they are what your memory
-   files get distilled from.
+- **Prose rules lose to system-prompt defaults.** A generic "do not use subagents"
+  line beat a written review rule twice in two days. When a rule fails twice, the
+  next tier is a hook.
+- **The critic needs the strongest model and no cycle cap.** Each time a cap stopped
+  an unfinished review, the user authorized more cycles anyway, so the cap only cost
+  a round trip. A closure table before each new cycle keeps fixes honest.
+- **Sweep real history before a hook can block.** A test corpus measures what its
+  author imagined. A blocking hook tolerates zero false positives, because a gate
+  that blocks good work gets switched off.
+- **Every gate needs an off switch, and the switch belongs to the user.** The deny
+  message names it and tells the model not to use it.
+- **Pin the model on every fan-out.** An unpinned subagent inherits the session's
+  model, so a wide fan-out runs on the most expensive tier.
+- **Agents clean up what they plant.** A probe symlink left behind by one review
+  cycle turned a later cleanup into a credential wipe.
 
 ## What this is not
 
-- Not a magic prompt. The leverage is in the loop, not any one string.
-- Not tied to one vendor. The pattern — rules-as-code, invoked skills, review
-  loops, evals — ports across agents; this skeleton is written for Claude Code
-  because it has the deepest hook and subagent surface.
-- Not a substitute for judgment. It's the scaffolding that makes good judgment
-  repeatable and reviewable.
+- A magic prompt. The leverage is in the loop, and no single string carries it.
+- Tied to one vendor. Rules as code, invoked skills, review loops and evals port
+  across agents. This skeleton targets Claude Code because it has the deepest hook
+  and subagent surface.
+- A substitute for judgment. It makes good judgment repeatable and reviewable.
 
 ---
 
-Maintained by [Joseph Decker](https://josephdecker.app). If you want this
-installed and tuned for your team's repos, that's what I do — details at
-[josephdecker.app](https://josephdecker.app).
+Maintained by Joseph Decker · [josephdecker.app](https://josephdecker.app)

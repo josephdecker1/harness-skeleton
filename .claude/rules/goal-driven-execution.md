@@ -25,6 +25,18 @@ Each verify line must be something you can actually observe — a test passing, 
 curl returning the expected shape, a log line appearing. Not "looks right" or
 "should work."
 
+## Grounding progress claims
+
+Before you report progress, check each claim against a tool result from this
+session. Report only the work you can point to evidence for, and say plainly when
+something is not verified yet.
+
+## When to skip
+
+Trivial work: a typo, a one-line fix, a rename with no behavior change, a
+formatter commit, a dependency bump, a documentation-only edit. The rule is for
+changes where "make it work" is too weak to loop on.
+
 ## Why
 
 Strong success criteria let the agent (and its subagents) loop independently.

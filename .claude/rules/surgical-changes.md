@@ -10,6 +10,11 @@ Touch only what the task requires. Clean only your own mess.
 - If you spot unrelated dead code or a smell, mention it — don't delete it in the
   same diff.
 
+## Orphan cleanup
+
+- Remove imports, variables and functions that **your** change made unused.
+- Leave pre-existing dead code alone unless the task asks for its removal.
+
 ## The diff test
 
 Every changed line should trace directly to the task. If a reviewer asks "why did

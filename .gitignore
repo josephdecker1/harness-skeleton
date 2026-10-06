@@ -15,3 +15,9 @@ token_*.json
 *.swp
 .idea/
 .vscode/
+
+# The review gate's off switch is local to one checkout.
+.claude/review-gate.off
+
+# Python bytecode
+__pycache__/

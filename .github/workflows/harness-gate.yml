@@ -14,7 +14,7 @@ jobs:
     name: no hard-coded secrets in the diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: scan pushed range for secret shapes
@@ -48,14 +48,28 @@ jobs:
     name: evals still hold
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: run the deterministic evals
         run: |
           chmod +x .claude/hooks/check-no-secrets.sh evals/run.sh \
                    scripts/plain-language-extract.sh \
                    scripts/plain-language-rhetoric.sh \
-                   scripts/plain-language-comments.sh
+                   scripts/plain-language-comments.sh \
+                   .claude/hooks/review-gate.py \
+                   evals/review-gate/run-cases.sh \
+                   evals/review-gate/mutation-check.sh
           ./evals/run.sh
+      - name: every review-gate case is load-bearing
+        run: ./evals/review-gate/mutation-check.sh
+
+  plugin:
+    name: plugin manifest validates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: validate the plugin and its marketplace file
+        # Pinned so a CLI release cannot change the verdict between two runs.
+        run: npx --yes @anthropic-ai/claude-code@2.1.292 plugin validate .
 
   plain-language:
     name: plain language gates
@@ -67,7 +81,7 @@ jobs:
       # Take the base from the event, the way the no-secrets job above does.
       PL_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Both gates walk the range between the base and HEAD. The default
           # depth-1 checkout leaves the base unreachable, which the probe below
