@@ -1,0 +1,6 @@
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Add retry to the client, then we can talk about an adversarial-review-agent run."}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"I will dispatch {\"name\":\"Agent\"} with subagent_type adversarial-review-agent later."}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"git status"}}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01","name":"Agent","input":{"description":"Research retry libraries","subagent_type":"general-purpose","prompt":"Survey adversarial testing and review tools for retries."}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"adversarial-review-agent is mentioned in this tool result only"}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01","name":"Agent","input":{"description":"Review the diff","subagent_type":"harness-skeleton:adversarial-review-agent","prompt":"Review branch feature/x against main. Anchored goal: add retry."}}]}}

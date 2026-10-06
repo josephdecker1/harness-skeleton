@@ -1,0 +1,17 @@
+{
+  "name": "harness-skeleton",
+  "displayName": "Harness Skeleton",
+  "version": "2.0.0",
+  "description": "An adversarial review agent, the verify, handoff and teach-claude skills, and two guard hooks: a secret scan on file writes and a review gate on push and pull request commands.",
+  "author": {
+    "name": "Joseph Decker",
+    "url": "https://josephdecker.app"
+  },
+  "homepage": "https://github.com/josephdecker1/harness-skeleton",
+  "repository": "https://github.com/josephdecker1/harness-skeleton",
+  "license": "MIT",
+  "keywords": ["harness", "review", "hooks", "evals", "skills"],
+  "skills": ["./.claude/skills/"],
+  "agents": ["./.claude/agents/adversarial-review-agent.md"],
+  "hooks": "./.claude/hooks/plugin-hooks.json"
+}

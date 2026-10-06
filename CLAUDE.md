@@ -22,10 +22,21 @@ For any non-trivial task:
    task requires. See `.claude/rules/surgical-changes.md`.
 3. **Verify by observing behavior**, not by asserting success. Run the thing.
    See `.claude/skills/verify/SKILL.md`.
-4. **Route the diff past the critic** before declaring done. See
-   `.claude/agents/adversarial-review-agent.md`.
+4. **Route the diff past the critic** before declaring done: dispatch
+   `adversarial-review-agent` and run until it concedes. The `review-gate` hook
+   blocks a push or a pull request until it has run. See
+   `.claude/rules/review-checkpoint.md`.
 5. **Write down what you decided** in a session log so the next session inherits
-   it. See `.claude/logs/TEMPLATE.md`.
+   it. Before a context reset, run the `handoff` skill. See
+   `.claude/logs/TEMPLATE.md`.
+
+## Blocked
+
+Never call a task impossible or blocked without an attempt log: what you tried,
+the exact error, and the smallest fix. See
+`.claude/rules/attempt-before-impossible.md`. When a failure has two candidate
+causes, remove one and rerun before you edit. See
+`.claude/rules/ablate-before-theorize.md`.
 
 ## Rules
 

@@ -15,14 +15,26 @@ user can do the thing.
 1. **Name the user-visible outcome.** One sentence: "a signed-out visitor submits
    the form and lands on a confirmation page." That sentence is the spec.
 2. **Drive the real flow**, not a mock of it. Hit the endpoint, click the button,
-   run the CLI. Use the same entry point a user would.
+   run the CLI. Use the same entry point a user would. Walk every hop of the
+   sentence, including hops you did not write: the page a new button links to is
+   part of the story.
 3. **Observe the outcome directly.** Read the response body, screenshot the page,
    grep the log line. Compare to the sentence in step 1.
 4. **Exercise one failure path.** The happy path passing tells you the least. Try
-   the empty input, the unauthorized user, the missing record.
+   the empty input, the unauthorized user, the missing record. Seed each data
+   state the outcome depends on (signed out, each role, empty, populated), then
+   delete the fixtures.
 5. **If nothing changed on screen**, get ground truth before re-editing: plant a
    debug marker or compare the served bytes to the file on disk. A silent no-op is
    usually a stale build or a wrong file served — another logic edit won't fix it.
+6. **Land the story in the automated suite.** A flow checked once by hand decays.
+   If the change adds a user story or changes its outcome, add or extend an
+   end-to-end test that asserts the outcome, not the implementation. If the test
+   can only run after a deploy, open a ticket tied to that deploy and say so.
+
+If the local environment cuts the story short (no payment provider, no API key),
+name the cut in the report: "verified through X. Y needs production config and is
+covered by Z."
 
 ## When to skip
 
