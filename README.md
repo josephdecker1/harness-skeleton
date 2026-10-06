@@ -58,8 +58,8 @@ Being honest about a skeleton matters more than looking finished, so:
   (`.claude/hooks/check-no-secrets.sh`) blocks a hard-coded key on both Write and
   Edit, fails closed if it can't parse the payload, and is proven by
   `evals/run.sh` — which the CI gate (`.github/workflows/harness-gate.yml`) runs
-  on every push. That much is a working enforcement loop you can watch go
-  red-green.
+  on every pull request and every push to `main`. That much is a working
+  enforcement loop you can watch go red-green.
 - **Runnable and tested in CI.** The plain-language gates in `scripts/` fail the
   build two ways. One catches a banned rhetorical device in changed Markdown.
   The other catches a comment block longer than the code under it. The

@@ -79,19 +79,25 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse --is-shallow-repository)" = false || {
               echo "plain-language: shallow clone. Give CI full history."; exit 2; }
-          # An all-zeros sha is branch creation or a force-push. Neither has a
-          # base to diff, and guessing one is how a gate goes quietly green.
+          EMPTY_TREE=$(git hash-object -t tree /dev/null)
+          echo "PL_EMPTY_TREE=$EMPTY_TREE" >> "$GITHUB_ENV"
           case "${PL_BASE_SHA:-}" in
-              ""|0000000000000000000000000000000000000000)
-                  echo "plain-language: no base sha on this event. Force-push or"
-                  echo "branch creation needs a human read, not a guessed range."
-                  exit 2 ;;
+              "")
+                  echo "plain-language: no base sha on this event."; exit 2 ;;
+              0000000000000000000000000000000000000000)
+                  # The push created the branch, so nothing came before it.
+                  # Measure the whole tree rather than guess a base.
+                  echo "PL_BASE=$EMPTY_TREE" >> "$GITHUB_ENV"
+                  echo "PL_RANGE=$EMPTY_TREE..HEAD" >> "$GITHUB_ENV"
+                  echo "new branch: measuring the whole tree"
+                  exit 0 ;;
           esac
           git rev-parse --verify -q "${PL_BASE_SHA}^{commit}" >/dev/null || {
               echo "plain-language: base $PL_BASE_SHA is not a commit here."; exit 2; }
           BASE=$(git merge-base "$PL_BASE_SHA" HEAD) || {
               echo "plain-language: no merge base with $PL_BASE_SHA."; exit 2; }
           echo "PL_BASE=$BASE" >> "$GITHUB_ENV"
+          echo "PL_RANGE=$BASE...HEAD" >> "$GITHUB_ENV"
           echo "measuring against $BASE"
 
       # Surface 2 of the rule's Wiring section. The loop walks each ordinary
@@ -99,11 +105,14 @@ jobs:
       # dilutes and a split commit hides, so both passes are needed.
       - name: comments no longer than the code they describe
         run: |
+          [ -n "${PL_BASE:-}" ] && [ -n "${PL_RANGE:-}" ] || { echo "plain-language: no range resolved."; exit 2; }
           rc=0
           for c in $(git rev-list --no-merges --reverse "$PL_BASE..HEAD"); do
-              scripts/plain-language-comments.sh "$c^!" || rc=1
+              # A root commit has no parent for "$c^!" to name.
+              if git rev-parse -q --verify "$c^" >/dev/null; then r="$c^!"; else r="$PL_EMPTY_TREE..$c"; fi
+              scripts/plain-language-comments.sh "$r" || rc=1
           done
-          scripts/plain-language-comments.sh "$PL_BASE...HEAD" || rc=1
+          scripts/plain-language-comments.sh "$PL_RANGE" || rc=1
           exit $rc
 
       # Surface 3. Two changes from the doc's recipe, both forced by this runner.
@@ -114,7 +123,8 @@ jobs:
       - name: no rhetorical devices in changed markdown
         run: |
           set -euo pipefail
-          git diff --name-only --diff-filter=d -z "$PL_BASE...HEAD" -- '*.md' \
+          [ -n "${PL_RANGE:-}" ] || { echo "plain-language: no range resolved."; exit 2; }
+          git diff --name-only --diff-filter=d -z "$PL_RANGE" -- '*.md' \
               > "$RUNNER_TEMP/md.z"
           grep -zv '^\.claude/rules/plain-language' < "$RUNNER_TEMP/md.z" \
               > "$RUNNER_TEMP/md-checked.z" || true

@@ -53,7 +53,8 @@ run. eval-004 re-extracts each block and diffs it.
 ```
 
 All of this half is deterministic and needs no credentials. The CI `eval-gate`
-job runs it on every push, so a regression turns the build red.
+job runs it on every pull request and every push to `main`, so a regression
+turns the build red.
 
 The behavioral half is not written. Whether an *agent* obeys rule 6 unprompted
 needs a live model and a graded rubric. These evals prove the gates work, not
