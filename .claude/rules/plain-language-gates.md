@@ -319,7 +319,7 @@ whose default branch is `master` all exit 2.
 BASE=$(git merge-base origin/main HEAD) || {
     echo "plain-language: cannot resolve origin/main."; exit 2; }
 git diff --name-only --diff-filter=d -z "$BASE...HEAD" -- '*.md' \
-  | grep -zv 'plain-language' \
+  | grep -zv '^\.claude/rules/plain-language' \
   | xargs -0 scripts/plain-language-rhetoric.sh
 ```
 
@@ -343,7 +343,7 @@ coworker who never installs the hook.
 
 `.github/workflows/harness-gate.yml` runs surfaces 2 and 3 here, as the
 `plain-language` job. It differs from the two recipes above in the ways listed
-below. The runner forced each one.
+below.
 
 - It takes the base from the GitHub event instead of `origin/main`. A pull
   request into another base would otherwise be measured against `main`, and
@@ -354,8 +354,6 @@ below. The runner forced each one.
 - A push that creates the branch has no base, and its event carries an
   all-zeros sha. The job then measures the whole tree from git's empty tree,
   and the commit loop diffs a root commit against that empty tree.
-- It anchors the gate-1 exclusion to `.claude/rules/`. An unanchored substring
-  lets any path holding `plain-language` opt itself out.
 - It writes the surface-3 file list to disk instead of piping. The Actions shell
   has no `pipefail`, so a failing `git diff` mid-pipe would exit 0.
 - It passes `-r` to `xargs`, because GNU `xargs` runs the gate once with no

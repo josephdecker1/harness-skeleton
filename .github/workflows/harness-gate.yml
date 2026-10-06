@@ -115,11 +115,9 @@ jobs:
           scripts/plain-language-comments.sh "$PL_RANGE" || rc=1
           exit $rc
 
-      # Surface 3. Two changes from the doc's recipe, both forced by this runner.
-      # The exclusion is anchored to the rules directory, because an unanchored
-      # substring lets any path holding "plain-language" opt itself out. The
-      # pipeline is split into files, because the Actions shell has no pipefail
-      # and a failing `git diff` mid-pipe would exit 0 green.
+      # Surface 3. The file list goes to disk, not a pipe, because the Actions
+      # shell has no pipefail and a failing `git diff` mid-pipe would exit 0.
+      # The gates doc lists every way this job differs from its recipes.
       - name: no rhetorical devices in changed markdown
         run: |
           set -euo pipefail
