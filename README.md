@@ -58,15 +58,20 @@ Being honest about a skeleton matters more than looking finished, so:
   (`.claude/hooks/check-no-secrets.sh`) blocks a hard-coded key on both Write and
   Edit, fails closed if it can't parse the payload, and is proven by
   `evals/run.sh` — which the CI gate (`.github/workflows/harness-gate.yml`) runs
-  on every push. That much is a working enforcement loop you can watch go
-  red-green.
+  on every pull request and every push to `main`. That much is a working
+  enforcement loop you can watch go red-green.
+- **Runnable and tested in CI.** The plain-language gates in `scripts/` fail the
+  build two ways. One catches a banned rhetorical device in changed Markdown.
+  The other catches a comment block longer than the code under it. The
+  `plain-language` job runs both against the range this branch adds, and
+  `evals/run.sh` proves the gates themselves still work.
 - **Real reference text you replace.** The rules, the memory/session-log/eval
   examples, and the review-agent playbook are genuine and usable as-is, but they
   are *content*, not enforcement — they work because the agent reads and follows
   them. Swap them for your team's.
 
 The leverage is the loop, and the loop is only as strong as the surfaces you
-actually wire. This repo ships one wired end-to-end as a worked example; the rest
+actually wire. This repo ships two wired end-to-end as worked examples; the rest
 is the scaffold to wire the same way.
 
 ```
@@ -99,7 +104,8 @@ harness-skeleton/
 │   ├── hooks/                    # a PreToolUse secret-scan gate + settings example
 │   ├── memory/                   # durable facts + the index that loads them
 │   └── logs/                     # session-log template
-├── evals/                        # a behavioral eval that gates model upgrades
+├── scripts/                      # the two plain-language gates, plus the drift check
+├── evals/                        # one model-behavior eval + deterministic gate tests
 └── .github/workflows/            # a CI job that runs the same gates a human merges through
 ```
 

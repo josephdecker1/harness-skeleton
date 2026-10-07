@@ -43,8 +43,9 @@ above? — runs with no credentials:
 ./evals/run.sh
 ```
 
-That is what CI runs on every push (`.github/workflows/harness-gate.yml`), so a
-regression in the gate this eval depends on turns the build red.
+That is what CI runs on every pull request and every push to `main`
+(`.github/workflows/harness-gate.yml`), so a regression in the gate this eval
+depends on turns the build red.
 
 ## Fail = block
 

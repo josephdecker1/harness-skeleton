@@ -1,7 +1,7 @@
 # Session log — 2026-01-16 — add the secret-scan PreToolUse hook
 
-An example of the log this template produces. The point is that a future session
-(or teammate) can reconstruct *why* the hook looks the way it does without asking.
+An example of the log this template produces. A future session (or teammate) can
+reconstruct *why* the hook looks the way it does without asking.
 
 ## Goal
 

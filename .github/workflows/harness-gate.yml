@@ -51,11 +51,85 @@ jobs:
       - uses: actions/checkout@v4
       - name: run the deterministic evals
         run: |
-          chmod +x .claude/hooks/check-no-secrets.sh evals/run.sh
+          chmod +x .claude/hooks/check-no-secrets.sh evals/run.sh \
+                   scripts/plain-language-extract.sh \
+                   scripts/plain-language-rhetoric.sh \
+                   scripts/plain-language-comments.sh
           ./evals/run.sh
 
+  plain-language:
+    name: plain language gates
+    runs-on: ubuntu-latest
+    env:
+      # The rule's Wiring section says `merge-base origin/main HEAD`, which is
+      # right at a workstation and wrong here. A PR into any base other than main
+      # then measures against main, and blames the branch for the base's prose.
+      # Take the base from the event, the way the no-secrets job above does.
+      PL_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Both gates walk the range between the base and HEAD. The default
+          # depth-1 checkout leaves the base unreachable, which the probe below
+          # turns into an exit 2 rather than a silent pass.
+          fetch-depth: 0
+
+      - name: resolve the base this branch is measured against
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --is-shallow-repository)" = false || {
+              echo "plain-language: shallow clone. Give CI full history."; exit 2; }
+          EMPTY_TREE=$(git hash-object -t tree /dev/null)
+          echo "PL_EMPTY_TREE=$EMPTY_TREE" >> "$GITHUB_ENV"
+          case "${PL_BASE_SHA:-}" in
+              "")
+                  echo "plain-language: no base sha on this event."; exit 2 ;;
+              0000000000000000000000000000000000000000)
+                  # The push created the branch, so nothing came before it.
+                  # Measure the whole tree rather than guess a base.
+                  echo "PL_BASE=$EMPTY_TREE" >> "$GITHUB_ENV"
+                  echo "PL_RANGE=$EMPTY_TREE..HEAD" >> "$GITHUB_ENV"
+                  echo "new branch: measuring the whole tree"
+                  exit 0 ;;
+          esac
+          git rev-parse --verify -q "${PL_BASE_SHA}^{commit}" >/dev/null || {
+              echo "plain-language: base $PL_BASE_SHA is not a commit here."; exit 2; }
+          BASE=$(git merge-base "$PL_BASE_SHA" HEAD) || {
+              echo "plain-language: no merge base with $PL_BASE_SHA."; exit 2; }
+          echo "PL_BASE=$BASE" >> "$GITHUB_ENV"
+          echo "PL_RANGE=$BASE...HEAD" >> "$GITHUB_ENV"
+          echo "measuring against $BASE"
+
+      # Surface 2 of the rule's Wiring section. The loop walks each ordinary
+      # commit, then one range pass catches what no single commit holds. A range
+      # dilutes and a split commit hides, so both passes are needed.
+      - name: comments no longer than the code they describe
+        run: |
+          [ -n "${PL_BASE:-}" ] && [ -n "${PL_RANGE:-}" ] || { echo "plain-language: no range resolved."; exit 2; }
+          rc=0
+          for c in $(git rev-list --no-merges --reverse "$PL_BASE..HEAD"); do
+              # A root commit has no parent for "$c^!" to name.
+              if git rev-parse -q --verify "$c^" >/dev/null; then r="$c^!"; else r="$PL_EMPTY_TREE..$c"; fi
+              scripts/plain-language-comments.sh "$r" || rc=1
+          done
+          scripts/plain-language-comments.sh "$PL_RANGE" || rc=1
+          exit $rc
+
+      # Surface 3. The file list goes to disk, not a pipe, because the Actions
+      # shell has no pipefail and a failing `git diff` mid-pipe would exit 0.
+      # The gates doc lists every way this job differs from its recipes.
+      - name: no rhetorical devices in changed markdown
+        run: |
+          set -euo pipefail
+          [ -n "${PL_RANGE:-}" ] || { echo "plain-language: no range resolved."; exit 2; }
+          git diff --name-only --diff-filter=d -z "$PL_RANGE" -- '*.md' \
+              > "$RUNNER_TEMP/md.z"
+          grep -zv '^\.claude/rules/plain-language' < "$RUNNER_TEMP/md.z" \
+              > "$RUNNER_TEMP/md-checked.z" || true
+          xargs -0 -r scripts/plain-language-rhetoric.sh < "$RUNNER_TEMP/md-checked.z"
+
   # Wire your real gates here — they mirror the local harness. This skeleton
-  # ships the two above as working references; add your build/test/lint jobs:
+  # ships the three above as working references; add your build/test/lint jobs:
   #
   # test:
   #   runs-on: ubuntu-latest
