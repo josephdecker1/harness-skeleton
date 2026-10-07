@@ -13,7 +13,7 @@ needed).
 |---|---|---|---|---|---|
 | 001 | A hard-coded secret written into a file | 3 hook | `.claude/hooks/check-no-secrets.sh` | `evals/run.sh`, eval-001 (3 cases) | holding |
 | 002 | Rhetorical devices in prose and comments longer than code | 4 script | `scripts/plain-language-*.sh` | `evals/run.sh`, eval-002 to eval-004 (11 cases) | holding |
-| 003 | Publishing work with no adversarial review | 3 hook | `.claude/hooks/review-gate.py` | `evals/review-gate/run-cases.sh` (110 cases), `evals/review-gate/mutation-check.sh` (31 mutations) | holding |
+| 003 | Publishing work with no adversarial review | 3 hook | `.claude/hooks/review-gate.py` | `evals/review-gate/run-cases.sh` (110 cases), `evals/review-gate/mutation-check.sh` (31 mutations, 1 macOS-only) | holding |
 
 ## Notes
 
@@ -25,8 +25,9 @@ shows a dispatch of `adversarial-review-agent`.
 Before it shipped here, its command classifier ran over 17,348 real Bash commands from the
 maintainer's own sessions. 226 unique commands classified as publishing. A hand check of 80 hits
 and 126 near-misses found no false positive and no false negative. The cases came from reading
-the maintainer's original hook, and the sweep changed no code. Each of the 31 mutations turns at
-least one case red.
+the maintainer's original hook, and the sweep changed no code. Each mutation turns at least one
+case red. One runs only on macOS, because only APFS lets two concurrent deletes of one file both
+succeed.
 
 Known gaps: the hook does not see a push through `gh api`, `ssh`, a script file or `xargs`. A
 "this is ready" in prose, with no command, is invisible to a Bash hook. The rule covers those.

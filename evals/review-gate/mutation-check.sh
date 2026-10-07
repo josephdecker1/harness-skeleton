@@ -72,7 +72,12 @@ mutate "file killswitch is spent before the review check" '        if transcript
         if transcript_has_review(payload.get("transcript_path")) is not False:
             return 0
 '
-mutate "off file claimed by delete, not rename" 'off.rename(spent)' 'off.unlink()'
+# Only APFS lets two concurrent deletes of one file both succeed. Elsewhere this mutant is correct code.
+if [ "$(uname)" = Darwin ]; then
+  mutate "off file claimed by delete, not rename" 'off.rename(spent)' 'off.unlink()'
+else
+  echo "SKIPPED   off file claimed by delete, not rename (macOS only)"
+fi
 mutate "agent command may name the off file" 'if _names_off_switch(cmd):' 'if False:'
 mutate "off-file name check ignores quotes" 're.sub(r"[\"'"'"'\\]", "", cmd)' 'cmd'
 mutate "agent may write the off file" 'if Path(str(inp.get("file_path") or "")).name == OFF_NAME:' 'if False:'

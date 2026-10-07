@@ -12,7 +12,7 @@
   It fails open on an unreadable transcript. The user turns it off for a session
   with `REVIEW_GATE=off`, or skips one publish with a `.claude/review-gate.off` file
   that the hook then deletes. The hook denies any agent command or file write that
-  names that file. 110 cases and 31 mutation checks live in `evals/review-gate/`.
+  names that file. 110 cases and 31 mutation checks, one of them macOS-only, live in `evals/review-gate/`.
 - **Rules:** `review-checkpoint.md`, `attempt-before-impossible.md`,
   `ablate-before-theorize.md` and `clean-up-probe-artifacts.md`.
 - **Skills:** `handoff` (capture state before a context reset) and `teach-claude`
