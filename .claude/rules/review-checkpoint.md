@@ -27,6 +27,12 @@ The `review-gate` hook enforces the first two. It denies `git push`, `gh pr crea
 
 If you catch yourself arguing that a 200-line diff is trivial, dispatch.
 
+The `review-gate` hook has no such exemption. It checks the current session only. A doc-only
+push gets the same deny, and so does a merge of a pull request reviewed in an earlier session.
+For those, the user runs `touch .claude/review-gate.off` in their own terminal. The file lets
+one blocked publish through, and the gate then deletes it. Never create it yourself. The gate
+denies any command or file write of yours that names it.
+
 ## How to dispatch
 
 ```
@@ -94,5 +100,5 @@ There is no cycle cap. Run until CONCEDE, unless the user sets a cap for this br
 
 A standard review approves by default. Without a counterweight, scope drift, premature
 abstraction and decorative tests ship. In the maintainer's own use, a prose version of this rule
-lost twice in two days to a generic "do not use subagents" line in a system prompt. Each time, a
-diff shipped unreviewed. The hook exists because prose lost that contest.
+lost twice in two days. Both times, a generic "do not use subagents" line in a system prompt won,
+and a diff shipped unreviewed. The hook exists because prose lost that contest.

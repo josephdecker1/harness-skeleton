@@ -1,6 +1,6 @@
 ---
 name: teach-claude
-description: Turn a recurring agent mistake into a durable fix at the right enforcement tier, proven by an eval that fails before the fix and passes after it. Records the lesson in evals/LEDGER.md. Use when the user says "you keep doing X", "make this stop for real", "add a harness lesson", or asks to review or re-run the ledger. Not for one-off bugs.
+description: Turn a recurring agent mistake into a durable fix at the right enforcement tier, proven by an eval that fails before the fix and passes after it. Records the lesson in evals/LEDGER.md. Use when the user says "you keep doing X", "make this stop for real" or "add a harness lesson". Also use it to review or re-run the ledger. Not for one-off bugs.
 argument-hint: "<the recurring behavior, or 'review ledger'>"
 ---
 

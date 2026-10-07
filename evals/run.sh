@@ -122,7 +122,7 @@ check_says "eval-004 exact heading match" "REAL" \
   extract_from "$tmp/shadow.md" "## Gate 1: five rhetorical devices"
 
 # eval-005: the review gate denies a publish command until the session shows a
-# review dispatch. 90 cases live in evals/review-gate/. See evals/LEDGER.md.
+# review dispatch. 110 cases live in evals/review-gate/. See evals/LEDGER.md.
 check_status "eval-005 review-gate cases" 0 "$here/review-gate/run-cases.sh"
 
 exit "$fail"

@@ -13,7 +13,7 @@ needed).
 |---|---|---|---|---|---|
 | 001 | A hard-coded secret written into a file | 3 hook | `.claude/hooks/check-no-secrets.sh` | `evals/run.sh`, eval-001 (3 cases) | holding |
 | 002 | Rhetorical devices in prose and comments longer than code | 4 script | `scripts/plain-language-*.sh` | `evals/run.sh`, eval-002 to eval-004 (11 cases) | holding |
-| 003 | Publishing work with no adversarial review | 3 hook | `.claude/hooks/review-gate.py` | `evals/review-gate/run-cases.sh` (90 cases), `evals/review-gate/mutation-check.sh` (21 mutations) | holding |
+| 003 | Publishing work with no adversarial review | 3 hook | `.claude/hooks/review-gate.py` | `evals/review-gate/run-cases.sh` (110 cases), `evals/review-gate/mutation-check.sh` (31 mutations) | holding |
 
 ## Notes
 
@@ -24,11 +24,19 @@ shows a dispatch of `adversarial-review-agent`.
 
 Before it shipped here, its command classifier ran over 17,348 real Bash commands from the
 maintainer's own sessions. 226 unique commands classified as publishing. A hand check of 80 hits
-and 126 near-misses found no false positive and no false negative. The 90 cases came from that
-sweep, and each of the 21 mutations turns at least one case red.
+and 126 near-misses found no false positive and no false negative. The cases came from reading
+the maintainer's original hook, and the sweep changed no code. Each of the 31 mutations turns at
+least one case red.
 
 Known gaps: the hook does not see a push through `gh api`, `ssh`, a script file or `xargs`. A
 "this is ready" in prose, with no command, is invisible to a Bash hook. The rule covers those.
 
+The gate checks one session. A doc-only push, or a merge in a later session, needs a new review
+or the user's one-shot `.claude/review-gate.off`. The hook denies any agent command or file write
+that names that file. That guard catches an agent that reaches for the switch. An agent that sets
+out to dodge the gate can still build the name inside a script.
+
 The gate fails open on a missing or unreadable transcript, because a gate that blocks every push
-when it cannot read evidence gets switched off.
+when it cannot read evidence gets switched off. A transcript that holds only the user prompt still
+counts as readable. That is the state at a session's first tool call, before Claude Code writes
+the assistant lines.

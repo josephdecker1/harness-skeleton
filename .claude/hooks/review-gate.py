@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""PreToolUse hook for Bash. Denies git push, gh pr create, gh pr merge and gh pr ready
-until the session transcript shows a dispatch of the adversarial-review-agent.
-The user turns it off with REVIEW_GATE=off in the environment, or by creating
-.claude/review-gate.off in the project directory. Both switches are for the user, not the model.
+"""PreToolUse hook for Bash, Write and Edit. Denies git push, gh pr create, gh pr merge and
+gh pr ready until the session transcript shows a dispatch of the adversarial-review-agent.
+The user turns it off with REVIEW_GATE=off in the environment, or skips one publish by creating
+.claude/review-gate.off, which the hook deletes when it uses it. The hook denies any agent
+command or file write that names that file.
 """
 import json
 import os
@@ -15,7 +16,9 @@ DISPATCH_NAME = ("harness-skeleton:" + REVIEW_AGENT) if os.environ.get("CLAUDE_P
 MAX_TRANSCRIPT_BYTES = 64 * 1024 * 1024
 DISPATCH_TOOLS = ("Agent", "Task")
 PREFILTER = tuple(f'"name":{sp}"{t}"' for t in DISPATCH_TOOLS for sp in ("", " "))
-GH_PR_PUBLISH = {"create", "merge", "ready"}
+# At a session's first tool call the assistant lines are not written yet, so the user line counts.
+SHAPE_MARKERS = tuple(f'"type":{sp}"{t}"' for t in ("user", "assistant") for sp in ("", " "))
+GH_PR_PUBLISH = {"create", "merge", "ready", "new"}
 GIT_ARG_FLAGS = {"-C", "-c", "--exec-path", "--git-dir", "--work-tree", "--namespace"}
 GH_ARG_FLAGS = {"-R", "--repo", "--hostname"}
 WRAPPERS = {"if", "then", "else", "elif", "do", "while", "until", "!", "time", "command",
@@ -27,6 +30,8 @@ ASSIGN_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 SHELL_C_RE = re.compile(r"^-[a-z]*c[a-z]*$")
 DRY_RUN_RE = re.compile(r"^(--dry-run|-[a-zA-Z]*n[a-zA-Z]*)$")
 MAX_DEPTH = 4
+OFF_NAME = "review-gate.off"
+FILE_TOOLS = ("Write", "Edit")
 
 
 def _strip_heredocs(cmd):
@@ -193,6 +198,10 @@ def scan_command(cmd, depth=0):
             or any(scan_command(x, depth + 1) for x in inners))
 
 
+def _names_off_switch(cmd):
+    return OFF_NAME in re.sub(r"[\"'\\]", "", cmd)
+
+
 def _is_review(inp):
     sub = str(inp.get("subagent_type", ""))
     return (sub == REVIEW_AGENT or sub.endswith(":" + REVIEW_AGENT)
@@ -210,8 +219,7 @@ def transcript_has_review(path):
         claude_shaped = False
         with open(p, encoding="utf-8", errors="ignore") as f:
             for line in f:
-                claude_shaped = claude_shaped or '"type":"assistant"' in line \
-                    or '"type": "assistant"' in line
+                claude_shaped = claude_shaped or any(m in line for m in SHAPE_MARKERS)
                 if not any(sig in line for sig in PREFILTER):
                     continue
                 try:
@@ -238,17 +246,26 @@ Call the Agent tool with subagent_type "{DISPATCH_NAME}". In the prompt, name th
 (branch, PR or commit range) and quote the anchored goal: the user's original request.
 Fix the findings, then run this command again.
 
-The gate stays on until the user turns it off. Do not turn it off yourself.
-If the user asks to skip review for this change, tell them the two switches:
+The gate checks this session only. A trivial or doc-only change gets no exemption, and a
+review from an earlier session does not count. If the user wants to skip the review,
+tell them the two switches. Do not use either one yourself.
   REVIEW_GATE=off in the environment that starts the session
-  touch .claude/review-gate.off   (in the project directory, until deleted)"""
+  touch .claude/review-gate.off   run by the user in their own terminal, in the project
+                                  directory. It allows the next blocked publish, then the
+                                  gate deletes it. Any command of yours that names it is denied."""
+
+OFF_REASON = """REVIEW GATE: only the user creates or changes .claude/review-gate.off.
+
+The gate denies any agent command or file write that names that file.
+If the user wants to skip the review, ask them to run this in their own terminal:
+  touch .claude/review-gate.off"""
 
 
-def deny():
+def deny(reason):
     return json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",
-        "permissionDecisionReason": DENY_REASON,
+        "permissionDecisionReason": reason,
     }})
 
 
@@ -257,15 +274,32 @@ def main():
         if os.environ.get("REVIEW_GATE") == "off":
             return 0
         payload = json.load(sys.stdin)
-        if payload.get("tool_name") != "Bash":
+        tool, inp = payload.get("tool_name"), payload.get("tool_input") or {}
+        if tool in FILE_TOOLS:
+            if Path(str(inp.get("file_path") or "")).name == OFF_NAME:
+                print(deny(OFF_REASON))
+            return 0
+        if tool != "Bash":
+            return 0
+        cmd = inp.get("command") or ""
+        if _names_off_switch(cmd):
+            print(deny(OFF_REASON))
+            return 0
+        if not scan_command(cmd):
+            return 0
+        if transcript_has_review(payload.get("transcript_path")) is not False:
             return 0
         root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or "."
-        if (Path(root) / ".claude" / "review-gate.off").exists():
+        off = Path(root) / ".claude" / OFF_NAME
+        spent = off.with_name(f"{OFF_NAME}.spent-{os.getpid()}")
+        try:
+            # Parallel tool calls run their hooks at once. Only one rename of the off file can
+            # succeed, while on APFS two deletes of it can both succeed.
+            off.rename(spent)
+        except FileNotFoundError:
+            print(deny(DENY_REASON))
             return 0
-        if not scan_command((payload.get("tool_input") or {}).get("command") or ""):
-            return 0
-        if transcript_has_review(payload.get("transcript_path")) is False:
-            print(deny())
+        spent.unlink(missing_ok=True)
     except Exception:
         pass
     return 0

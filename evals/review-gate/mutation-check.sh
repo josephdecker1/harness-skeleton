@@ -16,6 +16,11 @@ if text.count(old) != 1:
 open(dst, "w").write(text.replace(old, new))
 PY
 
+if ! "$here/run-cases.sh" >/dev/null 2>&1; then
+  echo "ERROR  the real hook fails its own cases, so a caught mutation proves nothing"
+  exit 1
+fi
+
 survivors=0
 n=0
 mutate() {   # $1 = label, $2 = old text, $3 = new text
@@ -37,8 +42,9 @@ mutate() {   # $1 = label, $2 = old text, $3 = new text
   fi
 }
 
-mutate "drop gh pr merge" '{"create", "merge", "ready"}' '{"create", "ready"}'
-mutate "drop gh pr ready" '{"create", "merge", "ready"}' '{"create", "merge"}'
+mutate "drop gh pr merge" '{"create", "merge", "ready", "new"}' '{"create", "ready", "new"}'
+mutate "drop gh pr ready" '{"create", "merge", "ready", "new"}' '{"create", "merge", "new"}'
+mutate "drop gh pr new" '{"create", "merge", "ready", "new"}' '{"create", "merge", "ready"}'
 mutate "ignore git -C" 'GIT_ARG_FLAGS = {"-C", ' 'GIT_ARG_FLAGS = {'
 mutate "ignore gh --repo" 'GH_ARG_FLAGS = {"-R", "--repo", "--hostname"}' 'GH_ARG_FLAGS = set()'
 mutate "treat quoted text as commands" 'segs, inners = _parse(_strip_heredocs(cmd.replace("\\\n", " ")))' 'segs, inners = [s.split() for s in __import__("re").split(r"&&|\|\||;|\||\n", cmd)], []'
@@ -50,22 +56,38 @@ mutate "skip prompt reference" '
 mutate "any Agent counts as a review" ' and _is_review(blk.get("input") or {})' ''
 mutate "ignore legacy Task tool" 'DISPATCH_TOOLS = ("Agent", "Task")' 'DISPATCH_TOOLS = ("Agent",)'
 mutate "disable env killswitch" 'if os.environ.get("REVIEW_GATE") == "off":' 'if False:'
-mutate "disable file killswitch" '.exists():
-            return 0' '.exists() and False:
-            return 0'
+mutate "disable file killswitch" '            off.rename(spent)
+' '            raise FileNotFoundError
+'
+mutate "file killswitch is not one-shot" 'off.rename(spent)' 'off.stat()'
+mutate "file killswitch is spent before the review check" '        if transcript_has_review(payload.get("transcript_path")) is not False:
+            return 0
+        root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or "."
+        off = Path(root) / ".claude" / OFF_NAME
+' '        root = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or "."
+        off = Path(root) / ".claude" / OFF_NAME
+        if off.exists():
+            off.unlink()
+            return 0
+        if transcript_has_review(payload.get("transcript_path")) is not False:
+            return 0
+'
+mutate "off file claimed by delete, not rename" 'off.rename(spent)' 'off.unlink()'
+mutate "agent command may name the off file" 'if _names_off_switch(cmd):' 'if False:'
+mutate "off-file name check ignores quotes" 're.sub(r"[\"'"'"'\\]", "", cmd)' 'cmd'
+mutate "agent may write the off file" 'if Path(str(inp.get("file_path") or "")).name == OFF_NAME:' 'if False:'
+mutate "deny names the bare agent in plugin mode" 'subagent_type "{DISPATCH_NAME}"' 'subagent_type "{REVIEW_AGENT}"'
+mutate "deny always names the plugin agent" 'if os.environ.get("CLAUDE_PLUGIN_ROOT") else REVIEW_AGENT' 'if True else REVIEW_AGENT'
 mutate "ignore CLAUDE_PROJECT_DIR" 'os.environ.get("CLAUDE_PROJECT_DIR") or ' ''
 mutate "git push --dry-run counts as publish" 'not any(DRY_RUN_RE.match(a) for a in args)' 'True'
-mutate "fail closed on missing transcript" 'is False:
-            print(deny())' 'is not True:
-            print(deny())'
+mutate "fail closed on missing transcript" '"transcript_path")) is not False:' '"transcript_path")) is True:'
+mutate "only an assistant line marks a Claude transcript" 'for t in ("user", "assistant")' 'for t in ("assistant",)'
 mutate "fail closed on foreign transcript shape" 'return False if claude_shaped else None' 'return False'
 mutate "ignore command substitution bodies" '
             or any(scan_command(x, depth + 1) for x in inners))' ')'
 mutate "ignore bash -c" 'return scan_command(rest[j + 1], depth + 1)' 'return False'
-mutate "ignore tool_name check" 'if payload.get("tool_name") != "Bash":' 'if False:'
-mutate "invert review check" 'is False:
-            print(deny())' 'is True:
-            print(deny())'
+mutate "ignore tool_name check" 'if tool != "Bash":' 'if False:'
+mutate "invert review check" '"transcript_path")) is not False:' '"transcript_path")) is False:'
 
 echo "---"
 echo "$n mutations, $survivors survived or failed to apply"

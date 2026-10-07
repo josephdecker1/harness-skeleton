@@ -79,6 +79,7 @@ for label, cmd in [
     ("gh pr create", "gh pr create --title 'feat: x' --body 'y'"),
     ("gh pr merge", "gh pr merge 42 --squash"),
     ("gh pr ready", "gh pr ready 42"),
+    ("gh pr new", "gh pr new --fill"),
     ("git -C push", "git -C ../other-repo push origin main"),
     ("env prefix push", "GIT_SSH_COMMAND='ssh -i k' git push"),
     ("env prefix gh pr create", "GH_TOKEN=$(cat tok) gh pr create --fill"),
@@ -155,17 +156,49 @@ case("allow when review came before a later edit", "git push", "review-then-edit
 case("allow inline transcript with review", "git push", GOOD, "allow")
 case("deny inline transcript without review", "git push", NOISE, "deny")
 case("deny inline transcript, no tool calls", "gh pr merge 1", [user("hi"), asst_text("hello")], "deny")
+case("deny first tool call, only the user prompt written so far", "git push",
+     [user("Push the branch."), {"type": "attachment", "attachment": {"type": "date"}}], "deny")
 
 case("deny REVIEW_GATE=off prefix does not skip the gate", "REVIEW_GATE=off git push", NR, "deny")
 case("deny REVIEW_GATE=off on a different segment", "REVIEW_GATE=off echo hi; git push", NR, "deny")
 case("deny env REVIEW_GATE=off wrapper does not skip the gate", "env REVIEW_GATE=off gh pr create --fill", NR, "deny")
 case("allow killswitch env var", "git push", NR, "allow", env={"REVIEW_GATE": "off"})
 case("deny REVIEW_GATE=on is not a killswitch", "git push", NR, "deny", env={"REVIEW_GATE": "on"})
-case("allow killswitch file in project dir", "git push", NR, "allow",
-     files=[".claude/review-gate.off"])
+OFF = [".claude/review-gate.off"]
+case("allow killswitch file in project dir, then spend it", "git push", NR, "allow",
+     files=OFF, gone=OFF)
 case("deny no killswitch file", "git push", NR, "deny", files=[".claude/other.txt"])
-case("allow killswitch file via CLAUDE_PROJECT_DIR", "git push", NR, "allow",
-     files=[".claude/review-gate.off"], payload_cwd="elsewhere", project_dir=True)
+case("allow killswitch file via CLAUDE_PROJECT_DIR, then spend it", "git push", NR, "allow",
+     files=OFF, payload_cwd="elsewhere", project_dir=True, gone=OFF)
+case("allow review ran, killswitch file kept for later", "git push", R, "allow",
+     files=OFF, kept=OFF)
+case("allow non-publish, killswitch file kept", "git status", NR, "allow", files=OFF, kept=OFF)
+
+OFF_SAYS = ["only the user creates", "touch .claude/review-gate.off"]
+for label, cmd in [
+    ("touch", "touch .claude/review-gate.off"),
+    ("mkdir and touch", "mkdir -p .claude && touch .claude/review-gate.off"),
+    ("double-quoted letter", "touch .claude/review-gate.of\"f\""),
+    ("single-quoted split", "touch '.claude/review-gate'.off"),
+    ("backslash in the name", "touch .claude/review-gate.o\\ff"),
+    ("redirect", ": > .claude/review-gate.off"),
+    ("inside bash -c", "bash -c 'touch .claude/review-gate.off'"),
+    ("remove", "rm -f .claude/review-gate.off"),
+]:
+    case(f"deny agent names the off file: {label}", cmd, R, "deny", reason_has=OFF_SAYS)
+case("deny Write of the off file", "", NR, "deny", tool_name="Write",
+     file_path=".claude/review-gate.off", reason_has=OFF_SAYS)
+case("deny Edit of the off file by absolute path", "", NR, "deny", tool_name="Edit",
+     file_path="/work/app/.claude/review-gate.off", reason_has=OFF_SAYS)
+case("allow Write of another file", "", NR, "allow", tool_name="Write", file_path="src/app.py")
+case("allow Write of a lookalike name", "", NR, "allow", tool_name="Write",
+     file_path="docs/review-gate.off.md")
+
+case("deny names the bare agent outside a plugin", "git push", NR, "deny",
+     reason_has=['subagent_type "adversarial-review-agent"'])
+case("deny names the namespaced agent in plugin mode", "git push", NR, "deny",
+     env={"CLAUDE_PLUGIN_ROOT": "/plugins/harness-skeleton"},
+     reason_has=['subagent_type "harness-skeleton:adversarial-review-agent"'])
 case("allow non-Bash tool", "git push", NR, "allow", tool_name="Read")
 
 case("allow missing transcript file (fail open)", "git push", "does-not-exist.jsonl", "allow")

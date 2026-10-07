@@ -24,11 +24,18 @@ For any non-trivial task:
    See `.claude/skills/verify/SKILL.md`.
 4. **Route the diff past the critic** before declaring done: dispatch
    `adversarial-review-agent` and run until it concedes. The `review-gate` hook
-   blocks a push or a pull request until it has run. See
+   blocks a push or a pull request until the session shows that dispatch. See
    `.claude/rules/review-checkpoint.md`.
 5. **Write down what you decided** in a session log so the next session inherits
    it. Before a context reset, run the `handoff` skill. See
    `.claude/logs/TEMPLATE.md`.
+
+## Memory
+
+Durable decisions and gotchas live in `.claude/memory/`, one file each. The next
+line loads their index into every session:
+
+@.claude/memory/MEMORY.md
 
 ## Blocked
 

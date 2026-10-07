@@ -9,15 +9,16 @@
   plugin ships the review agent, three skills and two hooks.
 - **`review-gate` hook.** Denies `git push`, `gh pr create`, `gh pr ready` and
   `gh pr merge` until the session shows a dispatch of `adversarial-review-agent`.
-  It fails open on an unreadable transcript. The user turns it off with
-  `REVIEW_GATE=off` or a `.claude/review-gate.off` file. 90 cases and 21 mutation
-  checks live in `evals/review-gate/`.
+  It fails open on an unreadable transcript. The user turns it off for a session
+  with `REVIEW_GATE=off`, or skips one publish with a `.claude/review-gate.off` file
+  that the hook then deletes. The hook denies any agent command or file write that
+  names that file. 110 cases and 31 mutation checks live in `evals/review-gate/`.
 - **Rules:** `review-checkpoint.md`, `attempt-before-impossible.md`,
   `ablate-before-theorize.md` and `clean-up-probe-artifacts.md`.
 - **Skills:** `handoff` (capture state before a context reset) and `teach-claude`
   (turn a recurring mistake into a proven harness lesson).
 - **`evals/LEDGER.md`**, one row per harness lesson.
-- **Plain-language gates in CI** (merged from #2).
+- **Plain-language gates in CI** (merged from #4).
 
 ### Changed
 

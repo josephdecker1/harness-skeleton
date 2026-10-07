@@ -16,8 +16,8 @@ token_*.json
 .idea/
 .vscode/
 
-# The review gate's off switch is local to one checkout.
-.claude/review-gate.off
+# The review gate's one-shot off switch. The user creates it, and the gate deletes it.
+.claude/review-gate.off*
 
 # Python bytecode
 __pycache__/

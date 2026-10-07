@@ -45,8 +45,8 @@ Pin the model per dispatch. Cheap, fast models for mechanical search and
 exploration; stronger models for reasoning, review, and synthesis. Don't inherit
 a default — an unpinned fleet quietly burns budget on the wrong tier.
 
-An unpinned dispatch inherits the session's model, so a wide fan-out quietly runs
-every agent on the most expensive tier and can spend a usage window in minutes.
+An unpinned dispatch inherits the session's model. A wide fan-out then runs every
+agent on the most expensive tier, and can spend a usage window in minutes.
 Pin the cheap tier on fan-outs.
 
 The review agent is the exception. It pins the strongest model in its own
