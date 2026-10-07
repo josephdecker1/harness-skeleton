@@ -35,4 +35,90 @@ check_blocked "eval-001 Write" "$(printf '{"tool_input":{"content":"key = \"%s\"
 check_blocked "eval-001 Edit"  "$(printf '{"tool_input":{"new_string":"key = \"%s\""}}' "$SECRET")"
 check_allowed "eval-001 clean" '{"tool_input":{"content":"key = process.env.PAYMENTS_API_KEY"}}'
 
+# ---------------------------------------------------------------------------
+# eval-002/003/004: the two plain-language gates, and the copies they ship as.
+# The rule carries each gate twice, as a fenced block a reader copies out and as
+# a file this repo runs. See evals/plain-language-eval.md.
+
+rhetoric="$here/../scripts/plain-language-rhetoric.sh"
+comments="$here/../scripts/plain-language-comments.sh"
+extract="$here/../scripts/plain-language-extract.sh"
+
+tmp="$(mktemp -d)"
+cleanup() { rm -rf "$tmp"; }
+trap cleanup EXIT
+
+check_status() {   # $1 = label, $2 = wanted exit, rest = the command
+  label="$1"; want="$2"; shift 2
+  got=0
+  "$@" >/dev/null 2>&1 </dev/null || got=$?
+  if [ "$got" = "$want" ]; then
+    echo "PASS  $label — exit $got"
+  else
+    echo "FAIL  $label — exit $got, wanted $want"
+    fail=1
+  fi
+}
+check_says() {     # $1 = label, $2 = wanted substring, rest = the command
+  label="$1"; want="$2"; shift 2
+  out="$("$@" 2>&1 </dev/null || true)"
+  case "$out" in
+    *"$want"*) echo "PASS  $label — said \"$want\"" ;;
+    *)         echo "FAIL  $label — output missing \"$want\""; fail=1 ;;
+  esac
+}
+mkrepo() {         # $1 = path
+  mkdir -p "$1"
+  git -C "$1" init -q >/dev/null 2>&1
+  git -C "$1" config core.autocrlf false
+}
+run_comments() {   # $1 = repo, rest = the gate's own arguments
+  dir="$1"; shift
+  ( cd "$dir" && "$comments" "$@" )
+}
+diff_block() {     # $1 = heading, $2 = the shipped script
+  # This is the only drift check, so it prints the difference rather than -q.
+  "$extract" "$1" | diff -u - "$2"
+}
+
+# eval-002: gate 1 reads prose.
+printf 'The point is that this sentence trips the gate.\n' > "$tmp/dirty.md"
+printf 'This sentence states its claim and stops.\n'       > "$tmp/clean.md"
+check_status "eval-002 banned device"  1 "$rhetoric" "$tmp/dirty.md"
+check_status "eval-002 clean prose"    0 "$rhetoric" "$tmp/clean.md"
+# The no-files guard keeps the CI xargs step from scanning stdin. GNU xargs runs
+# the command once with no arguments when nothing changed.
+check_says   "eval-002 no-files guard" "no files given" "$rhetoric"
+
+# eval-003: gate 2 reads a diff. Two fixture repos, so neither leaks into the other.
+mkrepo "$tmp/heavy"
+printf '# one\n# two\n# three\n# four\nx = 1\n' > "$tmp/heavy/thing.py"
+git -C "$tmp/heavy" add thing.py
+check_status "eval-003 comments outnumber code" 1 run_comments "$tmp/heavy"
+
+mkrepo "$tmp/lean"
+printf '# why this constant\na = 1\nb = 2\nc = 3\nd = 4\n' > "$tmp/lean/thing.py"
+git -C "$tmp/lean" add thing.py
+check_status "eval-003 comments in proportion"  0 run_comments "$tmp/lean"
+# A git diff flag can empty the stream, which the parser would read as clean.
+check_status "eval-003 flag argument refused"   2 run_comments "$tmp/lean" --stat
+mkdir -p "$tmp/norepo"
+check_status "eval-003 outside a git repo"      2 run_comments "$tmp/norepo"
+
+# eval-004: the shipped scripts still match their fenced block in the rule.
+check_status "eval-004 gate 1 matches the rule" 0 \
+  diff_block "## Gate 1: five rhetorical devices" "$rhetoric"
+check_status "eval-004 gate 2 matches the rule" 0 \
+  diff_block "## Gate 2: comments longer than the code" "$comments"
+check_status "eval-004 missing heading fails closed" 2 "$extract" "## Gate 9: absent"
+# A heading that merely starts with the wanted text must not shadow the real one.
+# A prefix match here returns the wrong script and still exits 0.
+{ printf '## Gate 1: five rhetorical devices, second edition\n\n'
+  printf '```bash\necho SHADOW\n```\n\n'
+  printf '## Gate 1: five rhetorical devices\n\n'
+  printf '```bash\necho REAL\n```\n'; } > "$tmp/shadow.md"
+extract_from() { DOC="$1" "$extract" "$2"; }
+check_says "eval-004 exact heading match" "REAL" \
+  extract_from "$tmp/shadow.md" "## Gate 1: five rhetorical devices"
+
 exit "$fail"

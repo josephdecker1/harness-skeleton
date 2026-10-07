@@ -24,14 +24,14 @@ mid-task and what the user must do next.
 If a pre-existing bug surfaces in the code you're already touching, fix it now.
 Don't file it separately and call the original task done — that leaves the thing
 broken *and* blocks the original task's "done" claim. The only exception: the fix
-would genuinely balloon the diff (renaming a service across 30 files when you
-touched 5). Then file it and say the original task is **blocked pending that
-work** — don't declare done.
+would balloon the diff (renaming a service across 30 files when you touched 5).
+Then file it and say the original task is **blocked pending that work** — don't
+declare done.
 
 ## When you must stop mid-task
 
-Sometimes you genuinely can't finish — a missing credential, a decision only the
-user can make. The wrap-up is:
+Sometimes you can't finish — a missing credential, a decision only the user can
+make. The wrap-up is:
 
 > **Status: incomplete.** Blocked on X. Y is still to do. To finish: <steps>.
 
