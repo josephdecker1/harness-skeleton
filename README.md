@@ -76,8 +76,9 @@ To offer the plugin to everyone who opens a repo, commit this to that repo's
 
 The gate denies `git push`, `gh pr create`, `gh pr ready` and `gh pr merge` until the
 session shows a dispatch of the review agent. The deny tells the agent to run that
-review without asking first. The review agent pins Opus, so each deny starts an Opus
-review loop that runs until the review concedes.
+review without asking first. The review agent pins Opus, so each deny costs at least one
+Opus review. With the `review-checkpoint` rule installed, the agent keeps reviewing until the
+review concedes.
 
 The gate checks the current session only. It has no exemption for a trivial or
 doc-only change. A review from an earlier session does not count, so merging
@@ -90,12 +91,17 @@ Two switches turn it off, and both are for you to use:
 - `touch .claude/review-gate.off`, run in your own terminal at the project root, lets
   the next blocked publish through. The gate then deletes the file.
 
-A plugin or copy install does not get this repo's `.gitignore`. Add
-`.claude/review-gate.off*` to yours, so a `git add -A` never commits the switch.
+A plugin or copy install does not get this repo's `.gitignore`. Run this once in your
+own terminal at the project root, so a `git add -A` never commits the switch:
 
-The gate denies any agent command or file write that names `review-gate.off`. That
-guard catches an agent that reaches for the switch. An agent that sets out to dodge
-the gate can still build the name inside a script.
+```
+printf '.claude/review-gate.off*\n' >> .gitignore
+```
+
+Do not hand this step to the agent. The gate denies any agent command or file write that
+names `review-gate.off`, including a commit whose message names it. That guard catches an
+agent that reaches for the switch. An agent that sets out to dodge the gate can still build
+the name inside a script.
 
 ### As a fork
 

@@ -26,8 +26,8 @@ Before it shipped here, its command classifier ran over 17,348 real Bash command
 maintainer's own sessions. 226 unique commands classified as publishing. A hand check of 80 hits
 and 126 near-misses found no false positive and no false negative. The cases came from reading
 the maintainer's original hook, and the sweep changed no code. Each mutation turns at least one
-case red. One runs only on macOS, because only APFS lets two concurrent deletes of one file both
-succeed.
+case red. One runs only on macOS. Measured on APFS and in a Linux container, only APFS let two
+concurrent deletes of one file both succeed.
 
 Known gaps: the hook does not see a push through `gh api`, `ssh`, a script file or `xargs`. A
 "this is ready" in prose, with no command, is invisible to a Bash hook. The rule covers those.

@@ -72,7 +72,7 @@ mutate "file killswitch is spent before the review check" '        if transcript
         if transcript_has_review(payload.get("transcript_path")) is not False:
             return 0
 '
-# Only APFS lets two concurrent deletes of one file both succeed. Elsewhere this mutant is correct code.
+# Of APFS and Linux, only APFS let two concurrent deletes of one file both succeed when measured.
 if [ "$(uname)" = Darwin ]; then
   mutate "off file claimed by delete, not rename" 'off.rename(spent)' 'off.unlink()'
 else
