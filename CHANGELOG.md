@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Plain-language CI job after a force push to `main`.** The push event's base sha
+  is not in the clone after a history rewrite, so the job stopped with exit 2. It
+  now measures the whole tree, the same as for a new branch.
+
 ## 2.0.0 — 2026-10-06
 
 ### Added
