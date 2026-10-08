@@ -106,8 +106,14 @@ jobs:
                   echo "new branch: measuring the whole tree"
                   exit 0 ;;
           esac
-          git rev-parse --verify -q "${PL_BASE_SHA}^{commit}" >/dev/null || {
-              echo "plain-language: base $PL_BASE_SHA is not a commit here."; exit 2; }
+          if ! git rev-parse --verify -q "${PL_BASE_SHA}^{commit}" >/dev/null; then
+              # A force push leaves the old head out of this clone, so no base is
+              # known. Measure the whole tree, as for a new branch.
+              echo "PL_BASE=$EMPTY_TREE" >> "$GITHUB_ENV"
+              echo "PL_RANGE=$EMPTY_TREE..HEAD" >> "$GITHUB_ENV"
+              echo "base $PL_BASE_SHA is not in this clone: measuring the whole tree"
+              exit 0
+          fi
           BASE=$(git merge-base "$PL_BASE_SHA" HEAD) || {
               echo "plain-language: no merge base with $PL_BASE_SHA."; exit 2; }
           echo "PL_BASE=$BASE" >> "$GITHUB_ENV"

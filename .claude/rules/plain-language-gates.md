@@ -354,6 +354,9 @@ below.
 - A push that creates the branch has no base, and its event carries an
   all-zeros sha. The job then measures the whole tree from git's empty tree,
   and the commit loop diffs a root commit against that empty tree.
+- A force push to `main` leaves the event's base sha out of the clone, because
+  no branch points at the old head. The job then measures the whole tree the
+  same way.
 - It writes the surface-3 file list to disk instead of piping. The Actions shell
   has no `pipefail`, so a failing `git diff` mid-pipe would exit 0.
 - It passes `-r` to `xargs`, because GNU `xargs` runs the gate once with no
