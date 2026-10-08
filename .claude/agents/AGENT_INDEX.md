@@ -8,26 +8,29 @@ then returns a short structured summary, not a transcript.
 
 | Agent | Use it for |
 |---|---|
-| `adversarial-review-agent.md` | Argue a diff should not merge, before "done" |
+| `adversarial-review-agent` | Argue a diff should not merge, before "done" |
 | *(add your own)* | Domain work: backend, frontend, infra, data |
 
 ## Dispatch pattern
 
-Use your agent's real subagent call. In Claude Code that's the `Agent` (Task)
-tool, keyed on `subagent_type` + `prompt`:
+Each file here is a Claude Code subagent: its frontmatter carries the `name`, the
+`description` the router reads, the `tools`, and the `model`. Dispatch it by name
+with the `Agent` tool:
 
 ```
 Agent(
   description="Adversarial review",
-  subagent_type="general-purpose",
+  subagent_type="adversarial-review-agent",
   prompt="""
-    Read .claude/agents/adversarial-review-agent.md for your job.
     Target: <branch / PR / diff>
     Anchored goal: "<verbatim quote of the task>"
     Run all five frames. Return verdict + findings ranked by severity.
   """
 )
 ```
+
+Installed through the plugin, the name gains a prefix:
+`harness-skeleton:adversarial-review-agent`.
 
 ## The output contract
 
@@ -41,3 +44,11 @@ multi-KB dump back into the orchestrator's context.
 Pin the model per dispatch. Cheap, fast models for mechanical search and
 exploration; stronger models for reasoning, review, and synthesis. Don't inherit
 a default — an unpinned fleet quietly burns budget on the wrong tier.
+
+An unpinned dispatch inherits the session's model. A wide fan-out then runs every
+agent on the most expensive tier, and can spend a usage window in minutes.
+Pin the cheap tier on fan-outs.
+
+The review agent is the exception. It pins the strongest model in its own
+frontmatter, because a critic weaker than the work it reviews approves by
+omission.

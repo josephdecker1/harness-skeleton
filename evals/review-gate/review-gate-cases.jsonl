@@ -1,0 +1,109 @@
+{"name": "deny git push, no review", "command": "git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow git push, review ran", "command": "git push", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny git push with remote and branch, no review", "command": "git push -u origin feature/x", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow git push with remote and branch, review ran", "command": "git push -u origin feature/x", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny git push force, no review", "command": "git push --force-with-lease origin fix/y", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow git push force, review ran", "command": "git push --force-with-lease origin fix/y", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny gh pr create, no review", "command": "gh pr create --title 'feat: x' --body 'y'", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow gh pr create, review ran", "command": "gh pr create --title 'feat: x' --body 'y'", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny gh pr merge, no review", "command": "gh pr merge 42 --squash", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow gh pr merge, review ran", "command": "gh pr merge 42 --squash", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny gh pr ready, no review", "command": "gh pr ready 42", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow gh pr ready, review ran", "command": "gh pr ready 42", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny gh pr new, no review", "command": "gh pr new --fill", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow gh pr new, review ran", "command": "gh pr new --fill", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny git -C push, no review", "command": "git -C ../other-repo push origin main", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow git -C push, review ran", "command": "git -C ../other-repo push origin main", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny env prefix push, no review", "command": "GIT_SSH_COMMAND='ssh -i k' git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow env prefix push, review ran", "command": "GIT_SSH_COMMAND='ssh -i k' git push", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny env prefix gh pr create, no review", "command": "GH_TOKEN=$(cat tok) gh pr create --fill", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow env prefix gh pr create, review ran", "command": "GH_TOKEN=$(cat tok) gh pr create --fill", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny gh with --repo flag, no review", "command": "gh --repo acme/app pr merge 7", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow gh with --repo flag, review ran", "command": "gh --repo acme/app pr merge 7", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny full path git, no review", "command": "/usr/bin/git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow full path git, review ran", "command": "/usr/bin/git push", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "deny chained: and-chain", "command": "git add -A && git commit -m done && git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: semicolon chain", "command": "git commit -m x; git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: or chain", "command": "git fetch || git push origin main", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: pipe", "command": "echo built | tee log.txt && git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: pipe into publish segment", "command": "echo y | gh pr merge 3", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: subshell", "command": "(cd sub && git push)", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: command substitution", "command": "RESP=$(gh pr merge 42 --squash) && echo \"$RESP\"", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: backticks", "command": "URL=`gh pr create --fill`", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: substitution inside double quotes", "command": "echo \"$(git push)\"", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: bash -c", "command": "bash -c 'git push origin main'", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: newline separated", "command": "git add .\ngit push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: background", "command": "git push &", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: redirect then push", "command": "git push 2>&1 | tail -3", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: env wrapper", "command": "env FOO=1 git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: shell if", "command": "if git diff --quiet; then git push; fi", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny chained: heredoc then push", "command": "cat > n.md <<EOF\nexample\nEOF\ngit push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow chained push after review", "command": "git add -A && git commit -m done && git push", "transcript": "review.jsonl", "expect": "allow"}
+{"name": "allow mention: commit message names gh pr create", "command": "git commit -m 'then run gh pr create'", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: commit message with && and git push", "command": "git commit -m \"fix: a && git push && b\"", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: echo single quotes", "command": "echo 'next: git push after review'", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: echo double quotes", "command": "echo \"gh pr merge 5 later\"", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: grep pattern", "command": "grep -rn 'git push' docs/", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: heredoc body", "command": "cat > doc.md <<'EOF'\ngit push\ngh pr create\nEOF\necho done", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: heredoc commit message", "command": "git commit -F - <<EOF\nWe ran git push here.\nEOF", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: here-string", "command": "cat <<<'git push'", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: comment", "command": "ls # git push later", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow mention: script flag --push", "command": "python3 tool.py --push", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git status", "command": "git status", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git commit", "command": "git commit -m 'wip'", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git pull", "command": "git pull --rebase", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git stash push", "command": "git stash push -m wip", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git push --dry-run", "command": "git push --dry-run origin main", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git push -n", "command": "git push -n", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git push -un", "command": "git push -un origin main", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git -C status", "command": "git -C ../x status", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: git log", "command": "git log origin/main..HEAD --oneline", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh pr view", "command": "gh pr view 42 --json state", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh pr list", "command": "gh pr list", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh pr checks", "command": "gh pr checks 42", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh pr diff", "command": "gh pr diff 42", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh pr create --help", "command": "gh pr create --help", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh issue create", "command": "gh issue create --title x", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: gh repo view", "command": "gh repo view", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: docker push", "command": "docker push registry.example.com/app:v1", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: npm publish", "command": "npm publish", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "allow non-publish: empty command", "command": "", "transcript": "no-review.jsonl", "expect": "allow"}
+{"name": "deny plugin-namespaced lookalike is not a review", "command": "git push", "transcript": "lookalike-agent.jsonl", "expect": "deny"}
+{"name": "allow plugin-namespaced review", "command": "git push", "transcript": "review-namespaced.jsonl", "expect": "allow"}
+{"name": "allow review found by prompt reference", "command": "git push", "transcript": "review-prompt-ref.jsonl", "expect": "allow"}
+{"name": "allow legacy Task tool review", "command": "gh pr create --fill", "transcript": "review-legacy-task.jsonl", "expect": "allow"}
+{"name": "allow when review came before a later edit", "command": "git push", "transcript": "review-then-edit.jsonl", "expect": "allow"}
+{"name": "allow inline transcript with review", "command": "git push", "transcript": [{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Add retry to the client, then we can talk about an adversarial-review-agent run."}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "I will dispatch {\"name\":\"Agent\"} with subagent_type adversarial-review-agent later."}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": {"command": "git status"}}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Agent", "input": {"description": "Research retry libraries", "subagent_type": "general-purpose", "prompt": "Survey adversarial testing and review tools for retries."}}]}}, {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_01", "content": "adversarial-review-agent is mentioned in this tool result only"}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Agent", "input": {"description": "Review the diff", "subagent_type": "adversarial-review-agent", "prompt": "Review branch feature/x against main. Anchored goal: add retry."}}]}}, {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_01", "content": "VERDICT: CONCEDE"}]}}], "expect": "allow"}
+{"name": "deny inline transcript without review", "command": "git push", "transcript": [{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Add retry to the client, then we can talk about an adversarial-review-agent run."}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "I will dispatch {\"name\":\"Agent\"} with subagent_type adversarial-review-agent later."}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": {"command": "git status"}}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Agent", "input": {"description": "Research retry libraries", "subagent_type": "general-purpose", "prompt": "Survey adversarial testing and review tools for retries."}}]}}, {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_01", "content": "adversarial-review-agent is mentioned in this tool result only"}]}}], "expect": "deny"}
+{"name": "deny inline transcript, no tool calls", "command": "gh pr merge 1", "transcript": [{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "hi"}]}}, {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "hello"}]}}], "expect": "deny"}
+{"name": "deny first tool call, only the user prompt written so far", "command": "git push", "transcript": [{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Push the branch."}]}}, {"type": "attachment", "attachment": {"type": "date"}}], "expect": "deny"}
+{"name": "deny REVIEW_GATE=off prefix does not skip the gate", "command": "REVIEW_GATE=off git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny REVIEW_GATE=off on a different segment", "command": "REVIEW_GATE=off echo hi; git push", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "deny env REVIEW_GATE=off wrapper does not skip the gate", "command": "env REVIEW_GATE=off gh pr create --fill", "transcript": "no-review.jsonl", "expect": "deny"}
+{"name": "allow killswitch env var", "command": "git push", "transcript": "no-review.jsonl", "expect": "allow", "env": {"REVIEW_GATE": "off"}}
+{"name": "deny REVIEW_GATE=on is not a killswitch", "command": "git push", "transcript": "no-review.jsonl", "expect": "deny", "env": {"REVIEW_GATE": "on"}}
+{"name": "allow killswitch file in project dir, then spend it", "command": "git push", "transcript": "no-review.jsonl", "expect": "allow", "files": [".claude/review-gate.off"], "gone": [".claude/review-gate.off"]}
+{"name": "deny no killswitch file", "command": "git push", "transcript": "no-review.jsonl", "expect": "deny", "files": [".claude/other.txt"]}
+{"name": "allow killswitch file via CLAUDE_PROJECT_DIR, then spend it", "command": "git push", "transcript": "no-review.jsonl", "expect": "allow", "files": [".claude/review-gate.off"], "payload_cwd": "elsewhere", "project_dir": true, "gone": [".claude/review-gate.off"]}
+{"name": "allow review ran, killswitch file kept for later", "command": "git push", "transcript": "review.jsonl", "expect": "allow", "files": [".claude/review-gate.off"], "kept": [".claude/review-gate.off"]}
+{"name": "allow non-publish, killswitch file kept", "command": "git status", "transcript": "no-review.jsonl", "expect": "allow", "files": [".claude/review-gate.off"], "kept": [".claude/review-gate.off"]}
+{"name": "deny agent names the off file: touch", "command": "touch .claude/review-gate.off", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: mkdir and touch", "command": "mkdir -p .claude && touch .claude/review-gate.off", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: double-quoted letter", "command": "touch .claude/review-gate.of\"f\"", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: single-quoted split", "command": "touch '.claude/review-gate'.off", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: backslash in the name", "command": "touch .claude/review-gate.o\\ff", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: redirect", "command": ": > .claude/review-gate.off", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: inside bash -c", "command": "bash -c 'touch .claude/review-gate.off'", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny agent names the off file: remove", "command": "rm -f .claude/review-gate.off", "transcript": "review.jsonl", "expect": "deny", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny Write of the off file", "command": "", "transcript": "no-review.jsonl", "expect": "deny", "tool_name": "Write", "file_path": ".claude/review-gate.off", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "deny Edit of the off file by absolute path", "command": "", "transcript": "no-review.jsonl", "expect": "deny", "tool_name": "Edit", "file_path": "/work/app/.claude/review-gate.off", "reason_has": ["only the user creates", "touch .claude/review-gate.off"]}
+{"name": "allow Write of another file", "command": "", "transcript": "no-review.jsonl", "expect": "allow", "tool_name": "Write", "file_path": "src/app.py"}
+{"name": "allow Write of a lookalike name", "command": "", "transcript": "no-review.jsonl", "expect": "allow", "tool_name": "Write", "file_path": "docs/review-gate.off.md"}
+{"name": "deny names the bare agent outside a plugin", "command": "git push", "transcript": "no-review.jsonl", "expect": "deny", "reason_has": ["subagent_type \"adversarial-review-agent\""]}
+{"name": "deny names the namespaced agent in plugin mode", "command": "git push", "transcript": "no-review.jsonl", "expect": "deny", "env": {"CLAUDE_PLUGIN_ROOT": "/plugins/harness-skeleton"}, "reason_has": ["subagent_type \"harness-skeleton:adversarial-review-agent\""]}
+{"name": "allow non-Bash tool", "command": "git push", "transcript": "no-review.jsonl", "expect": "allow", "tool_name": "Read"}
+{"name": "allow missing transcript file (fail open)", "command": "git push", "transcript": "does-not-exist.jsonl", "expect": "allow"}
+{"name": "allow missing transcript_path (fail open)", "command": "git push", "transcript": null, "expect": "allow"}
+{"name": "allow foreign transcript shape (fail open)", "command": "git push", "transcript": "foreign-shape.jsonl", "expect": "allow"}
+{"name": "deny garbled transcript with assistant marker, no review", "command": "git push", "transcript": "garbled.jsonl", "expect": "deny"}
+{"name": "allow bad stdin (fail open)", "command": "git push", "transcript": "no-review.jsonl", "expect": "allow", "raw_stdin": "{not json"}

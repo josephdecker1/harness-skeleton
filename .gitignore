@@ -15,3 +15,9 @@ token_*.json
 *.swp
 .idea/
 .vscode/
+
+# The review gate's one-shot off switch. The user creates it, and the gate deletes it.
+.claude/review-gate.off*
+
+# Python bytecode
+__pycache__/

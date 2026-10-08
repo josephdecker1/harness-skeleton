@@ -1,0 +1,15 @@
+{
+  "name": "harness-skeleton",
+  "description": "The harness-skeleton plugin: review agent, skills and guard hooks from a forkable agent harness.",
+  "owner": {
+    "name": "Joseph Decker",
+    "url": "https://josephdecker.app"
+  },
+  "plugins": [
+    {
+      "name": "harness-skeleton",
+      "source": "./",
+      "description": "An adversarial review agent, the verify, handoff and teach-claude skills, and two guard hooks."
+    }
+  ]
+}

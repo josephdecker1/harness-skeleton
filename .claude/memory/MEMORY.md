@@ -1,8 +1,8 @@
 # Memory index
 
 Durable facts the agent should recall across sessions live here as one file each,
-with a one-line pointer in this index. The index is what loads into context every
-session; the files are read on demand when relevant.
+with a one-line pointer in this index. `CLAUDE.md` imports this index, so it loads
+into context every session. The files are read on demand when relevant.
 
 Keep memory for what the code and git history do **not** already record: a
 decision and its rationale, a non-obvious constraint, a hard-won gotcha. Don't
